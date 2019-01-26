@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import math
 
 class Jar:
     '''A base object for sampling from'''
@@ -30,12 +31,79 @@ class FairDie:
         self.name = name
     
     def roll(self):
-        return np.random.choice(range(self.numsides)+1)
+        return np.random.choice(range(self.numsides))+1
+
+class UnfairDie:
+    
+    def __init__(self, probabilities, name):
+        # probabilities should add to 1, let us correct for that
+        probabilities = pd.Series(probabilities)
+        currentsum = probabilities.sum()
+        probabilities = probabilities.apply(lambda x: math.floor(x*100.0/currentsum))
+        self.probabilities = probabilities
+        
+        # We are going to approximate the solution to the 1% level
+        # we will sample from 1 to 100 and assign each side some fraction
+        # of those values. Then we will map from the percentile to the side
+        self.dictMapping = {}
+        counter = 0
+        for side in range(len(self.probabilities)):
+            for probability in range(self.probabilities[side]):
+                self.dictMapping[counter] = side
+                counter += 1
+                
+        self.name = name
+    
+    def roll(self):
+        return self.dictMapping[np.random.randint(0, 100)]+1
     
 
-# %%
+# %% Test a fair die
+
+Die1 = FairDie(6, 'A')
+Die1.roll()
+
+# %% Test a unfair die
+
+Die2 = UnfairDie([10, 10, 10, 10, 10, 50], 'B')
+Die2.roll()
+
+# %% Test a second unfair die
+
+Die3 = UnfairDie([0, 0, 0, 0, 0, 100], 'C')
+Die3.roll()
+
+# %% Run the dice experiment
+
+# There are 5 fair die and 1 unfair die in a bag
+Dies = [FairDie(6, 'A'), FairDie(6, 'B'), FairDie(6, 'C'), FairDie(6, 'D'),
+        FairDie(6, 'E'), UnfairDie([0, 0, 0, 0, 0, 100], 'F')]
 
 
+listDieName = []
+listDieSideTry1 = []
+listDieSideTry2 = []
+# try many times
+for index in range(1000000):
+    # for each try sample a random die
+    currentDie = np.random.choice(Dies)
+    currentDieName = currentDie.name
+    listDieName.append(currentDieName)
+    # roll that die twice
+    listDieSideTry1.append(currentDie.roll())
+    listDieSideTry2.append(currentDie.roll())
+
+# %% Setup the data in a dataframe
+    
+df = pd.DataFrame(listDieSideTry1, columns=['SideTry1'])
+df['SideTry2'] = listDieSideTry2
+df['Die'] = listDieName
+
+# %% Print the probabilities for each die
+
+indexer = ((df['SideTry1'] == 6 ) & (df['SideTry2'] == 6))
+currentsum = df.loc[indexer, 'Die'].value_counts().sum()
+df.loc[indexer, 'Die'].value_counts()/currentsum
 
 # %% Jar of cookies example
 # %% Setup the jars
