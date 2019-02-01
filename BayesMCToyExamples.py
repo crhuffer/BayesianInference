@@ -57,6 +57,52 @@ class UnfairDie:
     def roll(self):
         return self.dictMapping[np.random.randint(0, 100)]+1
     
+class POReport:
+    
+    def __init__(self, ReportDurationDays, AvgAnualPurchaseNumber):
+        self.ReportDurationDays = ReportDurationDays
+        self.AvgAnualPurchaseNumber = AvgAnualPurchaseNumber
+        self.NumPurchases = np.random.poisson(math.floor(self.AvgAnualPurchaseNumber*self.ReportDurationDays/365))
+        self.Purchases = np.random.randint(low=1, high=self.ReportDurationDays+1, size=self.NumPurchases)
+        
+#    def buildreport(self):
+#        self.NumPurchases = np.random.poisson(math.floor(self.AvgAnualPurchaseNumber*self.ReportDurationDays/365))
+#        self.Purchases = np.random.randint(low=0, high=self.ReportDurationDays, size=self.NumPurchases)
+#        return self.Purchases
+
+        
+        
+# %%
+
+PO1 = POReport(30, 365000)    
+print(PO1.NumPurchases)
+
+# %%
+        
+ReportDurationDays = 30
+tries = 1000
+
+list_ExpectedPurchases = []
+list_ActualPurchases = []
+for AvgAnualPurchaseNumber in range(36500, 365000, 3650):      
+    for attempt in range(tries):
+        PO1 = POReport(ReportDurationDays, AvgAnualPurchaseNumber)    
+        list_ExpectedPurchases.append(AvgAnualPurchaseNumber)
+        list_ActualPurchases.append(PO1.NumPurchases)
+    
+# %%
+    
+df_PO = pd.DataFrame(list_ExpectedPurchases, columns=['ExpectedPurchases'])
+df_PO['ActualPurchases'] = list_ActualPurchases
+
+# %%
+fig, ax = plt.subplots(figsize=(10,7))
+sns.boxplot(x='ExpectedPurchases', y='ActualPurchases', data=df_PO)
+
+# %%
+
+fig, ax = plt.subplots(figsize=(10,7))
+plt.scatter(x='ExpectedPurchases', y='ActualPurchases', data=df_PO, marker='.', alpha=0.1)
 
 # %% Test a fair die
 
